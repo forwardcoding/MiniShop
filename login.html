@@ -1,0 +1,159 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<!--<meta http-equiv="Content-Type" content="text/html; charset=gb2312" />-->
+<link href="style/main.css" rel="stylesheet" type="text/css" />
+<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+		<title></title>
+		<script language="javascript" type="text/javascript" src="js/jquery.js"></script>
+		<script src="js/mui.min.js"></script>
+		<link href="css/mui.min.css" rel="stylesheet" />
+		<script type="text/javascript" charset="utf-8">
+			mui.init();
+		</script>
+<!--<script language="javascript" src="js/LodopFuncs.js"></script>-->
+<script src="js/printer.js" type="text/javascript" charset="utf-8"></script>
+<TITLE>login</TITLE>
+
+
+<SCRIPT language=javascript>   
+	$(document).ready(function(){
+	var type=40;
+   //if (guestcode!=''){
+	$.ajax({
+	 type:"POST",
+	 url:"https://121.43.197.34/minishop/ajaxcommonquery1.php",
+	 dataType:"json",
+	 data:{"querytype":type},
+	 //data:{"vatno":vatno},
+	 success: function(json){
+		 //for (var p in json){
+			 //alert (json[p].seq);
+		 //}
+		 var seqselect=$("#staffshifts");
+			$("option",seqselect).remove();
+			var option="<option value=\"\">请选择...</option>";
+			//option+="<option value='0'\"\">不限...</option>";
+			$.each(json,function(k,v)
+			{
+				option+="<option value='" + v['ID'] + "'>"  + v['shiftsname'] + "</option>";
+			})
+			$("#staffshifts").append(option);
+			//$("#mtype").val($("#mtypevalue").val());//选中value为$id的值
+			//$("#stype").val($("#stypevalue").val());
+			
+		 },error: function(){alert('nodata');}
+	})
+});
+function login(){
+username=document.form1.username.value;
+userpwd=document.form1.password.value;
+staffshifts=$("#staffshifts").val();
+if (username=='')
+{
+alert('请输入登陆名称！');
+return false;
+}
+else if (userpwd=='')
+{
+alert('请输入用户名对应的密码！');
+return false;
+}
+else{
+			var type1=41;
+			$.ajax({
+				async:false,
+			 type:"POST",
+			 url:"https://121.43.197.34/minishop/ajaxcommonquery1.php",
+			 dataType:"json",
+			 data:{"querytype":type1,"username":username,"userpwd":userpwd},
+			 success: function(json){
+				if (json.result>0){
+					window.location='goodssales.html?username='+json.userid+'&pwd=userpwd'+'&staffshifts='+staffshifts;
+				}
+				else{
+					alert('用户名或密码错误！');
+					return false;
+						
+				}	
+				 },error: function(){//alert('nodata');
+				 alert('无法正确连接服务器');
+				 }
+			})			
+	return true;
+}
+}
+</SCRIPT>
+<META content="MSHTML 6.00.2900.5583" name=GENERATOR></HEAD>
+<BODY leftMargin=0 topMargin=0 onload=document.form1.username.focus() MARGINHEIGHT="0" MARGINWIDTH="0">
+
+<FORM name="form1" onSubmit="return login()" action="login.php" method="post">
+<TABLE height="86%" cellSpacing=0 cellPadding=0 width="100%" border=0 align="center">
+  <TBODY>
+  <TR>
+    <TD align=middle height=439>
+      <TABLE width=720 border=0>
+        <TBODY>
+        <TR>
+          <TD align=center>
+            <TABLE height=337 cellSpacing=0 cellPadding=0 width=491 
+            background=img/bsdt.jpg border=0>
+              <TBODY>
+              <TR>
+                <TD colSpan=3 height=130 align="center"><span class="STYLE2"><font size="+5">MINI超市管理系统</font></span></TD>
+			   </TR>
+              <TR>
+                <TD width=140 height=120>&nbsp;</TD>
+                <TD align=middle width=312>
+                  <TABLE cellSpacing=0 cellPadding=0 width="100%" border=0>
+                    <TBODY>
+                    <TR>
+                      <TD align=middle width="22%" height=30><SPAN 
+                        class=STYLE4>员工班次：</SPAN><BR></TD>
+                    <TD width="42%"><select name="staffshifts" size="1" id="staffshifts"></select></TD>
+                    <TD vAlign=center align=middle width="36%" rowspan="3">
+ 
+</TD>
+</TR>
+                    <TR>
+                      <TD align=middle width="22%" height=30><SPAN 
+                        class=STYLE4>用户名：</SPAN><BR></TD>
+                      <TD width="42%"><INPUT id=username size=18 name=username></TD>
+                      <TD vAlign=center align=middle width="36%" rowspan="3">
+ 
+</TD>
+</TR>
+                    <TR>
+                      <TD align=middle height=30><SPAN 
+                      class=STYLE4>密　码：</SPAN></TD>
+                      <TD><INPUT id=password type=password size=18 
+                        name=password></TD>
+</TR>
+					<TR>
+                      <TD align=middle height=30></TD>
+                      <TD><input type="button" value="登录" onclick="login()"></TD>
+</TR>
+</TBODY>
+</TABLE>
+</TD>
+                <TD width=39>&nbsp;</TD></TR>
+              </TBODY></TABLE></TD></TR>
+        <TR>
+          <TD>&nbsp;</TD>
+          <TD>
+		  </TD>
+		  </TR></TBODY></TABLE></TD></TR></TBODY></TABLE>
+<TABLE cellSpacing=0 cellPadding=0 width="100%" border=0>
+  <TBODY>
+  <TR>
+   <TD height=4></TD>
+  </TR>
+</TBODY>
+</TABLE>
+<input type="hidden" name="action" value="login">
+</FORM>
+
+</BODY>
+</HTML>
+

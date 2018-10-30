@@ -1,0 +1,823 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<!--<meta http-equiv="Content-Type" content="text/html; charset=gb2312" />-->
+<link href="style/main.css" rel="stylesheet" type="text/css" />
+<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+		<title></title>
+		<script language="javascript" type="text/javascript" src="js/jquery.js"></script>
+		<script src="js/mui.min.js"></script>
+		<link href="css/mui.min.css" rel="stylesheet" />
+		<script type="text/javascript" charset="utf-8">
+			mui.init();
+		</script>
+<!--<script language="javascript" src="js/LodopFuncs.js"></script>-->
+<script src="js/printer.js" type="text/javascript" charset="utf-8"></script>
+<script language="javascript" type="text/javascript" src="My97DatePicker/WdatePicker.js"></script> 
+<!--<object id="LODOP_OB" classid="clsid:2105C259-1E0C-4534-8141-A753534CB4CA" width=0 height=0> 
+	<embed id="LODOP_EM" type="application/x-print-lodop" width=0 height=0 pluginspage="js/install_lodop32.exe"></embed>
+</object>-->
+<title>销售管理</title>
+<style>
+
+      h5 {  
+        text-align:center;  
+      }  
+       
+      table th, table td {  
+        border:1px solid #aaa;  
+        padding:5px; font-size:16px; 
+      }  
+      th {  
+        background-color:#eee;  
+      }  
+
+	select{ width:100%;height:40px; font-size:22px;}
+	select	  option {font-size:22px; font-family:微软雅黑;}
+.daibiaotd {
+	/*font-size:36px;font-weight:bold;*/
+	/*width:35px;*/
+	/*white-space:nowrap;*//*不允许换行，防止上下显示后一张袋标纸打不下*/
+	}
+.daibiaotd2 {/*font-size:36px;font-weight:bold; text-decoration:underline*/}
+.daibiaotd1{
+	/*width:283px;
+	word-wrap:break-word;
+	word-break:break-all;*/
+	}
+.w_210 {
+    position: relative;
+    width: 170px;
+}
+.w_240 {
+    /*width: 100px;
+	padding:0 1px;*/
+	width: 500px;
+	text-align:center;
+}
+.w_120 {
+    /*width: 140px;*/
+	width: 110px;
+}
+.w_160 {
+    /*width: 120px;*/
+	width: 131px;
+}
+li {list-style-type:none;}
+</style>
+<script language="javascript">
+	var savedBleId;
+	var bleObj;/* = new ConnectPrinter(savedBleId);*/
+		(function() {
+
+				//判断缓存的设备地址
+
+				mui.plusReady(function() {
+					/*var */savedBleId = localStorage.getItem("bleId");
+					if(savedBleId) {
+						/*var */bleObj = new ConnectPrinter(savedBleId);
+					} else {
+						plus.nativeUI.confirm('打印机为设置，是否前往设置？',function(e){
+							if(e.index===0){
+								mui.openWindow({
+									id:"printer.html",
+									url:"printer.html"
+								});
+							}
+						});
+					};
+					//测试打印
+					/*document.getElementById("test").addEventListener("tap",function(){
+						var PrintText = "                  阿里巴巴采购部";
+							PrintText+="\n采购人：马云      采购商品：狗粮";
+						bleObj.gotoPrint(PrintText,30);
+						//bleObj.gotoPrint(PrintText,10);
+						bleObj.gotoPrintRows(10);
+					});*/
+					/*document.getElementById("barcode").addEventListener("input",function(){
+						alert(this.value);
+					});*/
+				});
+				
+			})();
+	$(document).ready(function(){
+	$("#barcode").focus();
+	var str = getQueryString('username');
+	//var str1 = getQueryString('pwd');
+	var staffshifts = getQueryString('staffshifts');
+	$("#user").val(str);
+	$("#staffshifts").val(staffshifts);
+	$("#barcode").keydown(function(e) {//扫条码后计算加入清单
+        if(e.keyCode==13){
+			//判断库存数及查找是否有次商品
+			var type=1;
+			var gbarcode=$("#barcode").val();
+					$.ajax({
+					 type:"POST",
+					 url:"https://121.43.197.34/minishop/ajaxcommonquery1.php",
+					 dataType:"json",
+					 data:{"querytype":type,"gbarcode":gbarcode},
+				 success: function(json){
+					 $("#name").val(json.gname);
+					 $("#g_class").val(json.gclassname);
+					 $("#g_brand").val(json.gbrand);
+					 $("#g_retailprice").val(json.retailprice);
+					 $("#g_thisprice").val(json.retailprice);
+					 $("#g_quantity").val(json.gquantity);//当前库存,用于加入购物车前判断库存是否是0
+					 $("#gpic").attr("src",json.picurl);
+					 $("#g_memo").val(json.memo);
+					 $("#quantity").focus();
+					 },error: function(){alert('nodata');}
+				})	
+		}
+			//alert('test');
+			//window.event.keyCode=9;
+		
+    });
+	getnewseqno();	
+	
+	var type=3;//加载支付方式
+   //if (guestcode!=''){
+	$.ajax({
+	 type:"POST",
+	 url:"https://121.43.197.34/minishop/ajaxcommonquery1.php",
+	 dataType:"json",
+	 data:{"querytype":type},
+	 //data:{"vatno":vatno},
+	 success: function(json){
+		 var payselect=$("#paymethod");
+			$("option",payselect).remove();
+			var option="<option value=\"\">请选择...</option>";
+			$.each(json,function(k,v)
+			{
+				option+="<option value='" + v['ID'] + "'>" + v['name'] + "</option>";
+			})
+			$("#paymethod").append(option);
+			//$("#paymethod").val("现金");
+					
+		 },error: function(){alert('nodata');}
+	})
+	$("#g_thisprice").bind("propertychange",function() { /*限制用量只能录入数字*/
+		if(""!=this.value){ 
+		var str = this.value.replace(/(^\s*)|(\s*$)/g, "");/*两种写法要求先录入数字再录入+-号*/
+		//var str = this.value.replace(/^(\-|\+)?\d+(\.\d+)?$/g, "");
+		if(this.value != str )
+		//if(this.value == str ) 
+		this.value = str; 
+		} 
+		if( isNaN(Number(this.value))) 
+		this.value = this.value.replace(/[\D]/,''); 
+	});
+	$("#paymoney").bind("propertychange",function() { /*限制用量只能录入数字*/
+		if(""!=this.value){ 
+		var str = this.value.replace(/(^\s*)|(\s*$)/g, "");/*两种写法要求先录入数字再录入+-号*/
+		//var str = this.value.replace(/^(\-|\+)?\d+(\.\d+)?$/g, "");
+		if(this.value != str )
+		//if(this.value == str ) 
+		this.value = str; 
+		} 
+		if( isNaN(Number(this.value))) 
+		this.value = this.value.replace(/[\D]/,''); 
+	});
+	$("#paymethod").change(function(e) {//支付方式
+        if ($("#paymethod").val()==1){
+			$("#paymoney").removeAttr("disabled");
+			$("#paymoney").val("");
+			$("#thechange").val("");
+		}
+		else{
+			$("#paymoney").attr("disabled","disabled");
+			$("#paymoney").val($("#totalmoney").val());
+			$("#thechange").val("0");
+			//$("#paymoney").attr("disabled",false);
+		}
+		//alert($("#paymethod").val());
+    });
+	$("#paymoney").keyup(function(e) {   
+        getthechange();
+    });
+});
+</script>
+<script language="javascript">
+//辅助方法--单击购物车中的"+"  "-"  "x"按钮是找到相关商品所在td,以jQuery对象返回  
+      function findStock(btn){  
+        var name = $(btn).parent().siblings().eq(1).html();//获取商品名字  
+        //注意table默认有行分组,若此处使用 $("#table1>tr:gt(0)")则找不到任何tr  
+		alert(name);
+        var $trs = $("#table1>tbody>tr:gt(0)");  
+        for(var i=0;i<$trs.length;i++){  
+          var fName = $trs.eq(i).children().eq(0).html();  
+          if(name == fName){//找到匹配的商品  
+            return $trs.eq(i).children().eq(3);  
+          }  
+        }  
+      }
+//增加"+"功能  
+      function increase(btn){  
+        //获取该商品库存看是否<=0  
+        //var $stock = findStock(btn);  
+        /*var stock = $stock.html();  
+        if(stock <= 0){  
+          return;  
+        } 
+        //库存-1    
+        $stock.html(--stock);  */
+        //购物车数据改变  
+		var barcode = $(btn).parent().siblings().eq(0).html();//获取商品条码
+		var seqno = $("#seqno").val();
+		var $td = $(btn).prev();  
+        var num = parseFloat($td.val()).toFixed(1);
+		//alert(barcode+'  '+seqno+'  '+num);
+		var type=35;
+		$.ajax({
+		 type:"POST",
+		 url:"https://121.43.197.34/minishop/ajaxcommonquery1.php",
+		 dataType:"json",
+		 data:{"querytype":type,"gbarcode":barcode,"seqno":seqno,"num":num},
+		 success: function(json){
+				if(!json.enough&&!json.result){
+					alert('库存不足！');
+					return;
+				}
+				else{
+					$td.val(++num);  
+					//获取单价,再加计算前要先转换为number类型  
+					var price = parseFloat($(btn).parent().prev().html()).toFixed(2);  
+					$(btn).parent().next().html(parseFloat(num*price).toFixed(2));  
+					//getpaytotal();
+					showlist_new(seqno);//刷新;
+					getpaytotal();
+				}
+			 },error: function(){alert('nodata');}
+		})
+      }  
+        
+      //减少"-"功能  
+      function decrease(btn){  
+        //该商品数量=1时候不能再减少  
+        var num1 = parseInt($(btn).next().val());  
+        if(num1 <= 1){  
+          return;     
+        }  
+        var barcode = $(btn).parent().siblings().eq(0).html();//获取商品条码
+		var seqno = $("#seqno").val();
+		var $td = $(btn).next();  
+        var num = parseFloat($td.val()).toFixed(1);
+		//alert(barcode+'  '+seqno+'  '+num);
+		var type=36;
+		$.ajax({
+		 type:"POST",
+		 url:"https://121.43.197.34/minishop/ajaxcommonquery1.php",
+		 dataType:"json",
+		 data:{"querytype":type,"gbarcode":barcode,"seqno":seqno,"num":num},
+		 success: function(json){
+				if(json.result){
+					$td.val(--num);  
+					//获取单价,再加计算前要先转换为number类型  
+					var price = parseFloat($(btn).parent().prev().html()).toFixed(2);  
+					$(btn).parent().next().html(parseFloat(num*price).toFixed(2));  
+					//getpaytotal();
+					showlist_new(seqno);//刷新;
+					getpaytotal();
+				}
+			 },error: function(){alert('nodata');}
+		}) 
+      }  
+        
+      //"x"删除按钮功能  
+      function del(btn){  
+        //将商品数量归还库存  
+       /* var $stock = findStock(btn);  
+        var stock = parseInt($stock.html());  
+        var num = parseInt($(btn).parent().prev().prev().children().eq(1).val());  
+        $stock.html(num + stock); */
+		var barcode = $(btn).parent().siblings().eq(0).html();//获取商品条码
+		var seqno = $("#seqno").val();
+		var type=37;
+		$.ajax({
+		 type:"POST",
+		 url:"https://121.43.197.34/minishop/ajaxcommonquery1.php",
+		 dataType:"json",
+		 data:{"querytype":type,"gbarcode":barcode,"seqno":seqno},
+		 success: function(json){
+				if(json.result){
+					//清空改行商品列表  
+        			$(btn).parent().parent().remove();  
+					//getpaytotal();
+					showlist_new(seqno);//刷新;
+					getpaytotal();
+				}
+			 },error: function(){alert('nodata');}
+		}) 
+        
+          
+        //总计功能  
+       // total();  
+      }
+//总计功能  
+    /*function total(){  
+      //获取所有购物车中的trs  
+      var $trs = $("#goods tr");  
+      var amount = 0;  
+      for(var i=0;i<$trs.length;i++){  
+        var money = parseInt($trs.eq(i).children().eq(3).html());  
+        amount += money;  
+      }  
+      //写入总计栏  
+      $("#total").html(amount);  
+    }*/  
+
+function getNowFormatDate() {
+    var date = new Date();
+    var seperator1 = "-";
+    var seperator2 = ":";
+    var month = date.getMonth() + 1;
+    var strDate = date.getDate();
+    if (month >= 1 && month <= 9) {
+        month = "0" + month;
+    }
+    if (strDate >= 0 && strDate <= 9) {
+        strDate = "0" + strDate;
+    }
+    var currentdate = date.getFullYear() + seperator1 + month + seperator1 + strDate
+            + " " + date.getHours() + seperator2 + date.getMinutes()
+            + seperator2 + date.getSeconds();
+    return currentdate;
+}
+function rackchange() {
+	var type=13;
+	var rackid=$("#rack").val();
+	//alert(parentclassid);
+	$.ajax({
+	 type:"POST",
+	 url:"https://121.43.197.34/minishop/ajaxcommonquery1.php",
+	 dataType:"json",
+	 data:{"querytype":type,"rackid":rackid},
+	 //data:{"vatno":vatno},
+	 success: function(json){
+		 var boxselect=$("#box");
+			$("option",boxselect).remove();
+			var option="<option value=\"\">请选择...</option>";
+			///option+="<option value='0'\"\">不限...</option>";
+			$.each(json,function(k,v)
+			{
+				option+="<option value='" + v['ID'] + "'>" + v['box'] + "</option>";
+			})
+			$("#box").append(option);
+		 },error: function(){alert('nodata');}
+	})	
+}
+function getnewseqno(){
+	var type=30;
+	$.ajax({
+	 type:"POST",
+	 url:"https://121.43.197.34/minishop/ajaxcommonquery1.php",
+	 dataType:"json",
+	 data:{"querytype":type},
+	 //data:{"vatno":vatno},
+	 success: function(json){
+			$("#seqno").val(json.newseqno);
+		 },error: function(){alert('nodata');}
+	})
+}
+function save(){//加入购物车
+	var seqno=$("#seqno").val();
+	var gbarcode=$("#barcode").val();
+	//var quantity=$("#quantity").val();//2018-5-29取消，扫码时不输入数量而在购物车中进行数量选择
+	var retailprice=$("#g_retailprice").val();
+	var thisprice=$("#g_thisprice").val();
+	var gname=$("#name").val();
+	var g_currentquantity=$("#g_quantity").val();
+	if (g_currentquantity<=0){
+		alert('库存不足');
+		return;
+	}
+	if (seqno==''){
+		alert('流水号错误！');
+		return false;
+	}
+	if (gbarcode=='' || gname==''){
+		alert('商品信息不存在！');
+		return false;
+	}
+	if (/*quantity==''||*/thisprice==''){
+		alert('数量或单价格式不正确！');
+		return false;
+	}
+	if (/*quantity==0||*/thisprice==0){
+		alert('数量或单价不能为0！');
+		return false;
+	}
+	var type=26;
+	$.ajax({
+	 type:"POST",
+	 url:"https://121.43.197.34/minishop/ajaxcommonquery1.php",
+	 dataType:"json",
+	 data:{"querytype":type,"seqno":seqno,"gbarcode":gbarcode,/*"quantity":quantity,*/"thisprice":thisprice,"retailprice":retailprice},
+	 success: function(json){
+		 if(json.result='true'){//数据保存成功后刷新iframe,seqno加1并打印
+		 //alert(json.result);
+			 showlist_new(seqno);//刷新;
+		     //getseqno(); 
+			 afterreset();//清空称重值
+			 getpaytotal();
+		 }
+		 },error: function(){alert('nodata');$("#outputemployeecode").attr("value","");}
+	})	
+}
+function payover(){//结账
+	var seqno=$("#seqno").val();
+	var paymethod=$("#paymethod").val();
+	var totalquantity=$("#totalquantity").val();
+	var totalmoney=$("#totalmoney").val();
+	var paymoney=$("#paymoney").val();
+	if (seqno==''){
+		alert('流水号错误,不能结账！');
+		return false;
+	}
+	if (paymethod==''){
+		alert('请选择结账方式！');
+		return false;
+	}
+	var type=4;
+	$.ajax({
+	 type:"POST",
+	 url:"https://121.43.197.34/minishop/ajaxcommonquery1.php",
+	 dataType:"json",
+	 data:{"querytype":type,"seqno":seqno,"paymethod":paymethod,"totalquantity":totalquantity,"totalmoney":totalmoney,"paymoney":paymoney},
+	 success: function(json){
+		 //alert(json.result);
+		 if(json.result='true'){//数据保存成功后刷新iframe,seqno加1并打印
+		     //getnewseqno();	 
+			 afterpayreset();
+			 showlist();//刷新;
+			 
+			 //getpaytotal();
+		 }
+		 },error: function(){alert('nodata');}
+	})
+}
+function openbox(){
+	bleObj.OpenMonyBox();
+}
+function payoverandprint(){//结账并打印
+	var seqno=$("#seqno").val();
+	var paymethod=$("#paymethod").val();
+	var totalquantity=$("#totalquantity").val();
+	var totalmoney=$("#totalmoney").val();
+	var paymoney=$("#paymoney").val();
+	var thechange=$("#thechange").val();//找零
+	if (seqno==''){
+		alert('流水号错误,不能结账！');
+		return false;
+	}
+	if (totalquantity==0 ||totalmoney==0){
+		alert('购物车中没有商品不能结账！');
+		return false;
+	}
+	if (paymethod==''){
+		alert('请选择结账方式！');
+		return false;
+	}
+	if (totalmoney=="" || thechange==""){
+		alert('收款金额或找零数值错误或格式不正确！');
+		return false;
+	}
+	var type=6;
+	$.ajax({
+	 type:"POST",
+	 url:"https://121.43.197.34/minishop/ajaxcommonquery1.php",
+	 dataType:"json",
+	 data:{"querytype":type,"seqno":seqno,"paymethod":paymethod,"totalquantity":totalquantity,"totalmoney":totalmoney,"paymoney":paymoney,"thechange":thechange},
+	 success: function(json){
+		 //alert(json.result);
+		 if(json.result='true'){//数据保存成功后刷新iframe,seqno加1并打印
+		     //getnewseqno();	 
+			 afterpayreset();
+			 
+			 //printbill(json.paymethodname,json.totalquantity,json.totalmoney,json.paymoney,json.thechange,json.seqno);//原Windows中打印方式
+			 printbill_new(json.paymethodname,json.totalquantity,json.totalmoney,json.paymoney,json.thechange,json.seqno);//安卓中打印方式
+			 /*var bleObj = new ConnectPrinter(savedBleId);
+			 var PrintText = "                  阿里巴巴采购部";
+							PrintText+="\n采购人：马云      采购商品：狗粮";
+						bleObj.gotoPrint(PrintText,30);
+						//bleObj.gotoPrint(PrintText,10);
+						bleObj.gotoPrintRows(10);*/
+			 //showlist();//刷新;
+			 //getpaytotal();
+			 $("#goods").children().remove();
+		 }
+		 },error: function(){alert('nodata');}
+	})
+}
+function afterreset(){
+	$("#barcode").val("");
+	$("#name").val("");
+					 $("#g_class").val("");
+					 $("#g_brand").val("");
+					 $("#g_retailprice").val("");
+					 $("#g_thisprice").val("");
+					 $("#g_quantity").val("");
+					 $("#quantity").val("1");
+					 $("#gpic").attr("src","");
+					 $("#g_memo").val("");
+					 $("#barcode").focus();
+}
+function afterpayreset(){
+	getnewseqno();
+					 $("#quantity").val("1");
+					 $("#barcode").focus();
+					 $("#totalmoney").val("0.00");
+					 $("#totalquantity").val("0");
+					 $("#paymethod").val("");
+					 $("#paymoney").val("");
+					 $("#thechange").val("");
+}
+function query(){//查询
+	$("#querylist").children().remove();
+	var bday=$("#bday").val();
+	var eday=$("#eday").val();
+	var type=38;
+	$.ajax(
+			{
+				type:"POST",
+				 url:"https://121.43.197.34/minishop/ajaxcommonquery1.php",
+				 dataType:"json",
+				 data:{"querytype":type,"bday":bday,"eday":eday},
+				 success: function(json){
+					 var obj=eval(json);
+					 sites = obj;
+					 //alert(sites.length);
+				if (sites.length > 0) {
+                for (var i = 0; i < sites.length; i++) {
+				  var li =  
+						  "<tr>"+  
+							//"<td style=\"display:none\">"+sites[i].gbarcode+"</td>"+ //不显示
+							"<td>"+sites[i].seqno+"</td>"+ 
+							"<td>"+sites[i].totalquantity+"</td>"+ 
+							"<td>"+sites[i].totoalmoney+"</td>"+ 
+							"<td>"+sites[i].paymethod+"</td>"+ 
+							"<td>"+sites[i].paymoney+"</td>"+ 
+							"<td>"+sites[i].timestr+"</td>"+
+							"<td>"+sites[i].statusstr+"</td>"+
+							"<td align='center'>"+  
+							  "<input type='button' value='明细' onclick='showdetail(this);'/> "+   
+							  "<input type='button' value='补打' onclick='printagin(this);'/>"+  
+							"</td>"+    
+						  "</tr>"+
+						  "<tr><td><div id='detaillist"
+						  +sites[i].seqno+
+						  "'/></td></tr>";
+						//追加到#goods后面  
+						$("#querylist").append($(li));
+						//getpaytotal();
+                    
+                }
+				}
+				},error: function(){alert('nodata');}
+			})
+		
+}
+function showdetail(btn){
+	var seqno=$(btn).parent().siblings().eq(0).html();
+	//alert(seqno);
+	$("#detaillist"+seqno).children().remove();
+	//document.getElementById('detaillist'+seqno).children().remove();
+	var type=34;
+	$.ajax(
+			{
+				type:"POST",
+				 url:"https://121.43.197.34/minishop/ajaxcommonquery1.php",
+				 dataType:"json",
+				 data:{"querytype":type,"seqno":seqno},
+				 success: function(json){
+					 var obj=eval(json);
+					 sites = obj;
+					 //alert(sites.length);
+				if (sites.length > 0) {
+				
+                for (var i = 0; i < sites.length; i++) {
+                
+				  var li =  
+						  "<tr>"+  
+							"<td style=\"display:none\">"+sites[i].gbarcode+"</td>"+ //不显示
+							"<td>"+sites[i].gname+"</td>"+ 
+							"<td>"+sites[i].retailprice+"</td>"+ 
+							"<td>"+sites[i].price+"</td>"+ 
+							"<td align='center'>"+  
+							   sites[i].quantity +  
+							"</td>"+  
+							"<td>"+sites[i].amount+"</td>"+    
+						  "</tr>";  
+						//追加到#goods后面  
+						//$("#goods").append($(li));
+						//document.getElementById('detaillist'+seqno).append($(li));
+						$("#detaillist"+seqno).append($(li));
+						//getpaytotal();
+                    
+                }
+				}
+				},error: function(){alert('nodata');}
+			})
+}
+function printagin(btn){
+	var currentdate=new Date();
+	var seqno=$(btn).parent().siblings().eq(0).html();
+	var paymethodname=$(btn).parent().siblings().eq(3).html();
+	var totalquantity=$(btn).parent().siblings().eq(1).html();
+	var totalmoney=$(btn).parent().siblings().eq(2).html();
+	var paymoney=$(btn).parent().siblings().eq(4).html();
+	var thechange=0;/*$(btn).parent().siblings().eq(1).html();*/
+	//alert(seqno);
+	//var bleObj = new ConnectPrinter(savedBleId);
+	
+	var year=currentdate.getFullYear();
+		var month=currentdate.getMonth()+1;
+		var day=currentdate.getDate();
+		var sites;
+		var type=7;//获得商品清单的行
+			$.ajax(
+			{
+				type:"POST",
+				 url:"https://121.43.197.34/minishop/ajaxcommonquery1.php",
+				 dataType:"json",
+				 data:{"querytype":type,"seqno":seqno},
+				 success: function(json){
+					 var obj=eval(json);
+					 sites = obj;
+				//alert(obj);	 
+		var currentdatestr=	year+'-'+month+'-'+day;	
+		//var html = " <table width=\"100%\" style=\"font-size:12px;\">";
+		
+			//html +="<tr height=\"20px\"><td class=\"daibiaotd\" >美林酒店</td></tr>";
+			//html +="<tr height=\"20px\"><td class=\"daibiaotd\" ><u>欢迎再次光临</u></td></tr></table>";
+			var textprint="      京东便利店      ";
+			//bleObj.SetFontSize(20);
+			bleObj.SetFontBig();
+			bleObj.PrintString(textprint);
+			//bleObj.SetFontSize(10);
+			bleObj.SetFontNormal();
+			textprint="\n            美林酒店";
+			bleObj.PrintString(textprint);
+			bleObj.SetFontSize(5);
+			bleObj.PrintString("\n单号:"+seqno);
+			bleObj.PrintString("\n打印时间:"+getNowFormatDate());
+			bleObj.PrintString("\n--------------------------------");
+			bleObj.PrintString("\n商品    单价      数量      小计");
+			for(var i=0;i<sites.length;i++){
+					bleObj.PrintString("\n"+sites[i].goodsname);
+                    bleObj.PrintString("\n       "+sites[i].price+"     "+sites[i].quantity+"      "+sites[i].amount);
+			}
+			bleObj.PrintString("\n--------------------------------");
+			bleObj.PrintString("\n合计:           "+totalquantity+"    "+totalmoney);
+			bleObj.PrintString("\n"+paymethodname +"："+ totalmoney);
+			bleObj.PrintString("\n找零:"+ thechange);
+            bleObj.PrintString("\n          欢迎下次光临        ");
+            bleObj.PrintString("\n地址：人民西路323号");
+            bleObj.PrintString("\n电话：051383526688");
+            bleObj.gotoPrintRows(10);
+            },error: function(){alert('nodata');}
+			})
+}
+function goodssales(){
+	//window.location='goodssales.html';
+	var emp=$("#user").val();//收银20180727加入
+	var staffshifts=$("#staffshifts").val();//班次20180727加入
+	//window.location='salesquery.html';
+	window.location='goodssales.html?username='+emp+'&pwd=userpwd'+'&staffshifts='+staffshifts;
+}
+function getQueryString(name) {
+	//alert('test');
+    var result = window.location.search.match(new RegExp("[\?\&]" + name + "=([^\&]+)", "i"));
+    if (result == null || result.length < 1) {
+        return "";
+    }
+    return result[1];
+}
+/*function printbill_new(paymethodname,totalquantity,totalmoney,paymoney,thechange,seqno){
+	var bleObj = new ConnectPrinter(savedBleId);
+	var currentdate=new Date();
+		var year=currentdate.getFullYear();
+		var month=currentdate.getMonth()+1;
+		var day=currentdate.getDate();
+		var sites;
+		var type=7;//获得商品清单的行
+			$.ajax(
+			{
+				type:"POST",
+				 url:"https://121.43.197.34/minishop/ajaxcommonquery1.php",
+				 dataType:"json",
+				 data:{"querytype":type,"seqno":seqno},
+				 success: function(json){
+					 var obj=eval(json);
+					 sites = obj;
+				//alert(obj);	 
+		var currentdatestr=	year+'-'+month+'-'+day;	
+		//var html = " <table width=\"100%\" style=\"font-size:12px;\">";
+		
+			//html +="<tr height=\"20px\"><td class=\"daibiaotd\" >美林酒店</td></tr>";
+			//html +="<tr height=\"20px\"><td class=\"daibiaotd\" ><u>欢迎再次光临</u></td></tr></table>";
+			var textprint="      京东便利店      ";
+			//bleObj.SetFontSize(20);
+			bleObj.SetFontBig();
+			bleObj.PrintString(textprint);
+			//bleObj.SetFontSize(10);
+			bleObj.SetFontNormal();
+			textprint="\n            美林酒店";
+			bleObj.PrintString(textprint);
+			bleObj.SetFontSize(5);
+			bleObj.PrintString("\n单号:"+seqno);
+			bleObj.PrintString("\n打印时间:"+getNowFormatDate());
+			bleObj.PrintString("\n--------------------------------");
+			bleObj.PrintString("\n商品    单价      数量      小计");
+			for(var i=0;i<sites.length;i++){
+					bleObj.PrintString("\n"+sites[i].goodsname);
+                    bleObj.PrintString("\n       "+sites[i].price+"     "+sites[i].quantity+"      "+sites[i].amount);
+			}
+			bleObj.PrintString("\n--------------------------------");
+			bleObj.PrintString("\n合计:           "+totalquantity+"    "+totalmoney);
+			bleObj.PrintString("\n"+paymethodname +"："+ totalmoney);
+			bleObj.PrintString("\n找零:"+ thechange);
+            bleObj.PrintString("\n          欢迎下次光临        ");
+            bleObj.PrintString("\n地址：人民西路323号");
+            bleObj.PrintString("\n电话：051383526688");
+            bleObj.gotoPrintRows(10);
+            },error: function(){alert('nodata');}
+			})
+}*/
+	
+</script>
+</head>
+<body id="body1">
+<table width="100%" border="0" id="table_style_all" cellpadding="0" cellspacing="0">
+  
+    <table id="table_border">
+    <tr>
+    	<td>
+        <input type="hidden" id="user" value="" >
+    	<!--<input type="hidden" id="class" value="">-->
+    	<input type="hidden" id="staffshifts" value="">
+       &nbsp;日期:&nbsp;从<input type="text" name="bday" id="bday" class="Wdate" onClick="WdatePicker()" value="">&nbsp;至<input type="text" name="eday" id="eday" class="Wdate" onClick="WdatePicker()" value="">
+       <input type="button" value="查询" onclick="query()">
+      </td> 
+      </tr> 
+  	</table>
+      <table id="table_border">
+  <tr><td>
+      <div class="detaillist">
+      </div>          
+    <table>  
+      <thead>  
+        <tr>  
+          <th>流水号</th> 
+          <th>商品数</th> 
+          <th>应收金额(元)</th>  
+          <th>支付方式</th>  
+          <th>实收金额(元)</th>
+          <th>状态</th>
+          <th>时间</th>
+          <th></th>
+        </tr>  
+      </thead>  
+      <tbody id="querylist">  
+      </tbody>  
+      <tfoot>    
+      </tfoot>  
+    </table>   </td>
+              </tr>
+            </table>
+        
+	</tr>
+    </table>
+
+
+</tr>
+</table>
+        
+		
+	   
+	  
+    <!--<td>&nbsp;</td>-->
+  <!--</tr>-->
+   
+</table>
+<table id="table_border">
+    <tr>
+    <td>
+    <input type="button" value=" 收银界面 " onclick="goodssales()" width="35" class="ltext2_1">
+    <input type="button" value=" 返回 " onclick="javascript:history.back(-1);" width="35" class="ltext2_1">  
+    <input type="button" value=" 开钱箱 " width="35" onclick="openbox()" class="ltext2_1">
+    <!--<input type="button" value=" 销售查询 " onclick="salesquery()" width="35" class="ltext2_1">
+    <input type="button" value=" 营业款查询 " onclick="turnovercollect()" width="35" class="ltext2_1">
+    <input type="button" value=" 库存查询 " onclick="goodsinventory()" width="35" class="ltext2_1">
+    <input type="button" value=" 入库 " onclick="purchase()" width="35" class="ltext2_1">
+    <input type="button" value=" 入库查询 " onclick="purchasequery()" width="35" class="ltext2_1">-->
+    </td>
+    </tr>
+ </table>
+
+</body>
+</html>
+

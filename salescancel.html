@@ -1,0 +1,293 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=gb2312" />
+<link href="style/main.css" rel="stylesheet" type="text/css" />
+<script language="javascript" type="text/javascript" src="js/jquery.js"></script>
+<title>销售管理</title>
+<style>
+	select{ width:100%;height:40px; font-size:22px;}
+	select	  option {font-size:22px; font-family:微软雅黑;}
+</style>
+<script language="javascript">
+	$(document).ready(function(){
+	$("#seqno").focus();
+	var str = getQueryString('username');
+	//var str1 = getQueryString('pwd');
+	var staffshifts = getQueryString('staffshifts');
+	$("#user").val(str);
+	$("#staffshifts").val(staffshifts);
+	$("#cancelbill").attr("disabled",true);
+	$("#seqno").keydown(function(e) {//
+        if(e.keyCode==13){
+			var type=5;
+			var seqno=$("#seqno").val();
+					$.ajax({
+					 type:"POST",
+					 url:"https://121.43.197.34/minishop/ajaxcommonquery1.php",
+					 dataType:"json",
+					 data:{"querytype":type,"seqno":seqno},
+				 success: function(json){
+					 //alert(json.days);
+					 if (json.days>1){
+						 alert('此单超过时效不可撤单！');
+						 return false;
+					 }
+					 if (json.status!=0){
+						 alert('此单已撤单或已有变化不可撤单！');
+						 return false;
+					 }
+					 $("#cancelbill").removeAttr("disabled");
+					 $("#totalquantity").val(json.totalquantity);
+					 $("#totalmoney").val(json.totalmoney);
+					 $("#paymethod").val(json.paymethod);
+					 $("#paymoney").val(json.paymoney);
+					 //showlist(seqno);
+					 showlist_new(seqno);
+					 $("#cancelbill").focus();
+					 },error: function(){alert('nodata');}
+				})	
+		}
+			//alert('test');
+			//window.event.keyCode=9;
+		
+    });
+});
+</script>
+<script language="javascript">
+function mtypechange() {//选择"不限时"清空文本框，否则文本框取选中的值
+	if($("#mtype").val()!=0){
+	$("#mtypetext").val($("#mtype").find("option:selected").text());
+	$("#mtypevalue").val($("#mtype").val());
+	}
+	else{
+		$("#mtypetext").val('');
+		$("#mtypevalue").val('');
+	}
+	var type=9;
+	var parentclassid=$("#mtype").val();
+	//alert(parentclassid);
+	$.ajax({
+	 type:"POST",
+	 url:"ajaxcommonquery1.php",
+	 dataType:"json",
+	 data:{"querytype":type,"parentclassid":parentclassid},
+	 //data:{"vatno":vatno},
+	 success: function(json){
+		 var seqselect=$("#stype");
+			$("option",seqselect).remove();
+			var option="<option value=\"\">请选择...</option>";
+			///option+="<option value='0'\"\">不限...</option>";
+			$.each(json,function(k,v)
+			{
+				option+="<option value='" + v['ID'] + "'>" + v['tname'] + "</option>";
+			})
+			$("#stype").append(option);
+			//$("#stype").val($("#mclass2value").val());	
+		 },error: function(){alert('nodata');}
+	})	
+}
+
+function cancel(){//撤单
+	var seqno=$("#seqno").val();
+	var emp=$("#user").val();//收银20180727加入
+	var staffshifts=$("#staffshifts").val();//班次20180727加入
+	if (seqno==''){
+		alert('流水单号错误！');
+		return false;
+	}
+	var type=27;
+	$.ajax({
+	 type:"POST",
+	 url:"https://121.43.197.34/minishop/ajaxcommonquery1.php",
+	 dataType:"json",
+	 data:{"querytype":type,"seqno":seqno,"emp":emp,"staffshifts":staffshifts},
+	 success: function(json){
+		 if(json.result='true'){//数据保存成功后刷新iframe,seqno加1并打印
+		 	//alert(json.result);
+			 //showlist(seqno);//刷新;
+		     //getseqno(); 
+			 $("#goods").children().remove();
+			 afterreset();//清空
+			 //alert(json.result);
+		 }
+		 },error: function(){alert('nodata');$("#outputemployeecode").attr("value","");}
+	})	
+}
+function afterreset(){
+	//alert('test');
+	$("#seqno").val("");
+	$("#totalquantity").val("");
+					 $("#totalmoney").val("");
+					 $("#paymethod").val("");
+					 $("#paymoney").val("");
+					 $("#cancelbill").attr("disabled",true);
+}
+function showlist_new(seqno1){//添加置购物车时显示
+	/*var obj=window.frames["current_detail"];
+	//obj.window.location='../package_detail.php?orderno='+orderno+'&vatno='+vatno+'&action=normal';
+	obj.window.location='sales_detail.php?seqno='+seqno+'&action=normal';//2017-8-2加入*/
+	//alert(seqno1);
+	//$("#goods").empty();
+	$("#goods").children().remove();
+	var type=34;
+	$.ajax(
+			{
+				type:"POST",
+				 url:"https://121.43.197.34/minishop/ajaxcommonquery1.php",
+				 dataType:"json",
+				 data:{"querytype":type,"seqno":seqno1},
+				 success: function(json){
+					 var obj=eval(json);
+					 sites = obj;
+					 //alert(sites.length);
+				if (sites.length > 0) {
+				
+                for (var i = 0; i < sites.length; i++) {
+                
+				  var li =  
+						  "<tr>"+  
+							"<td style=\"display:none\">"+sites[i].gbarcode+"</td>"+ //不显示
+							"<td>"+sites[i].gname+"</td>"+ 
+							"<td>"+sites[i].retailprice+"</td>"+ 
+							"<td>"+sites[i].price+"</td>"+ 
+							"<td align='center'>"+  
+							  sites[i].quantity +  
+							"</td>"+  
+							"<td>"+sites[i].amount+"</td>"+    
+						  "</tr>";  
+						//追加到#goods后面  
+						$("#goods").append($(li));
+						//getpaytotal();
+                    
+                }
+				}
+				},error: function(){alert('nodata');}
+			})
+		
+}
+function showlist(seqno)//
+{
+	var obj=window.frames["current_detail"];
+	//obj.window.location='../package_detail.php?orderno='+orderno+'&vatno='+vatno+'&action=normal';
+	obj.window.location='becancel_detail.php?seqno='+seqno+'&action=normal';
+}
+function goodssales(){
+	//window.location='goodssales.html';
+	var emp=$("#user").val();//收银20180727加入
+	var staffshifts=$("#staffshifts").val();//班次20180727加入
+	//window.location='salesquery.html';
+	window.location='goodssales.html?username='+emp+'&pwd=userpwd'+'&staffshifts='+staffshifts;
+}
+function getQueryString(name) {
+	//alert('test');
+    var result = window.location.search.match(new RegExp("[\?\&]" + name + "=([^\&]+)", "i"));
+    if (result == null || result.length < 1) {
+        return "";
+    }
+    return result[1];
+}
+</script>
+</head>
+<body id="body1">
+<table width="100%" border="0" id="table_style_all" cellpadding="0" cellspacing="0">
+  
+  <!--<tr>
+    <td>&nbsp;</td>-->
+    <!--<td>-->
+	<table width="100%" border="0" cellpadding="0" cellspacing="2"> 
+	  <input type="hidden" id="user" value="" >
+    	<!--<input type="hidden" id="class" value="">-->
+    	<input type="hidden" id="staffshifts" value="">
+      <input type="hidden" name="cid" value="" />
+      <!--用于给select设置当前值-->
+      <input type="hidden" name="gclassvalue" id="gclassvalue" value="" />
+      <input type="hidden" name="unitvalue" id="unitvalue" value="" />
+      <input type="hidden" name="currentimgurl" id="currentimgurl" value="" />
+      <!---->
+      <tr>
+      <td bgcolor="#FFFFFF">
+      </td>
+     </tr>
+    </table>
+	<!--</td>-->
+    <table id="table_border">
+    <tr>
+      <table id="table_border">
+  <tr><td>
+      <div class="detaillist">
+          <table width="100%" border="0" cellspacing="0" cellpadding="0" id="table_border">
+          <tr   align="left">   
+          <td><input type="text" name="seqno" id="seqno" value=""></td><td   colspan="2"><td align="center"><input type="button" value=" 撤单 " width="35" id="cancelbill" onclick="cancel()" class="ltext2_1"></td>   
+      </tr> 
+      <tr>
+        <div class="detaillist">
+            <table id="table_border">
+                <tr><td class="cellcolor"  align="right">件数</td>
+                    <td><input type="text" class="ltext5"  name="totalquantity" id="totalquantity" value="" readonly="readonly" /></td>
+                    <td class="cellcolor"  align="right">金额</td>
+                    <td><input type="text" class="ltext5"  name="totalmoney" id="totalmoney" value="" readonly="readonly" /></td>
+                </tr>
+                <tr>
+                	<td class="cellcolor"  align="right">支付方式</td>
+                    <td><input type="text" class="ltext5"  name="paymethod" id="paymethod" value="" readonly="readonly" /></td>
+                    <td class="cellcolor"  align="right">实付</td>
+                    <td><input type="text" class="ltext5"  name="paymoney" id="paymoney" value="" /></td>
+                </tr>
+                <!--<tr>   
+                      <td   align="right">&nbsp;</td>  
+                      </td>   
+                </tr>-->
+            </table>
+        </div>
+    </tr>
+      <tr>
+               <td colspan="2">
+               <table>  
+      <thead>  
+        <tr>  
+          <th>商品</th> 
+          <th>售价价(元)</th> 
+          <th>折后价(元)</th>  
+          <th>数量</th>  
+          <th>金额(元)</th>
+        </tr>  
+      </thead>  
+      <tbody id="goods">  
+      </tbody>  
+      <tfoot>  
+        <!--<tr>  
+          <td colspan="3" align="right">总计</td>  
+          <td id="total"></td>  
+          <td></td>  
+        </tr>-->  
+      </tfoot>  
+    </table>   </td>
+              </tr>
+            </table>
+        </div></td>
+	</tr>
+    
+
+
+</tr>
+</table>
+        
+		</form>
+	   
+	  
+    <!--<td>&nbsp;</td>-->
+  <!--</tr>-->
+   
+</table>
+<table id="table_border">
+    <tr>
+    <td>
+    <input type="button" value=" 收银界面 " onclick="goodssales()" width="35" class="ltext2_1">
+    <input type="button" value=" 返回 " onclick="javascript:history.back(-1);" width="35" class="ltext2_1">
+    </td>
+    </tr>
+ </table>
+</body>
+</html>
+
