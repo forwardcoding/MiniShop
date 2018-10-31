@@ -129,6 +129,7 @@ li {list-style-type:none;}
 					 $("#g_retailprice").val(json.retailprice);
 					 $("#g_thisprice").val(json.retailprice);
 					 $("#g_quantity").val(json.gquantity);//当前库存,用于加入购物车前判断库存是否是0
+					 $("#mayuse").val(json.mayuse);//库存是否可用，用于对过期商品的管控，防止售卖过期食品（逻辑来源于数据库凌晨对即将过期商品预警加锁，-1不可用，0可用）
 					 $("#gpic").attr("src",json.picurl);
 					 $("#g_memo").val(json.memo);
 					 if ($("#changeprice").is(':checked')){
@@ -401,8 +402,13 @@ function save(){//加入购物车-手动
 	var thisprice=$("#g_thisprice").val();
 	var gname=$("#name").val();
 	var g_currentquantity=$("#g_quantity").val();
+	var g_mayuse=$("#mayuse").val();
 	if (g_currentquantity<=0){
 		alert('库存不足');
+		return;
+	}
+	if (g_mayuse==-1){
+		alert('商品不可用，请检查！！');
 		return;
 	}
 	if (seqno==''){
@@ -446,8 +452,13 @@ function save_auto(){//加入购物车-扫码后直接加入
 	var thisprice=$("#g_thisprice").val();
 	var gname=$("#name").val();
 	var g_currentquantity=$("#g_quantity").val();
+	var g_mayuse=$("#mayuse").val();
 	if (g_currentquantity<=0){
 		alert('库存不足');
+		return;
+	}
+	if (g_mayuse==-1){
+		alert('商品不可用，请检查！！');
 		return;
 	}
 	if (seqno==''){
@@ -954,6 +965,7 @@ function logout(){
     	<input type="hidden" id="user" value="" >
     	<!--<input type="hidden" id="class" value="">-->
     	<input type="hidden" id="staffshifts" value="">
+    	<input type="hidden" id="mayuse" value="">
        <table   width="100%"     border="0"   cellspacing="1"   cellpadding="0">   
       <tr>   
           <td   width="25%" class="cellcolor"  align="right">改价</td>   
